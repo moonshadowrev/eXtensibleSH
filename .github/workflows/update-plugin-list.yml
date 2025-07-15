@@ -1,0 +1,79 @@
+name: Update Plugin List
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'plugins/**'
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate plugin list
+        run: |
+          # Initialize plugins/list.txt with header
+          cat > plugins/list.txt << 'EOF'
+# eXtensibleSH Plugins List
+# Format: plugin-name:category:supported-os
+# Categories: webservers, databases, containerization, monitoring, security, storage, development, networking, backup
+
+
+EOF
+
+          # Find all plugin directories and process them
+          for plugin_dir in $(find plugins -mindepth 2 -maxdepth 2 -type d | sort); do
+            plugin_name=$(basename "$plugin_dir")
+            category=$(basename "$(dirname "$plugin_dir")")
+            
+            # Skip if no metadata.json exists
+            if [ ! -f "$plugin_dir/metadata.json" ]; then
+              continue
+            fi
+            
+            # Check if this is a development-only plugin
+            if jq -r '.development_only // false' "$plugin_dir/metadata.json" | grep -q true; then
+              echo "Skipping development-only plugin: $plugin_name"
+              continue
+            fi
+            
+            # Get supported OS from available .sh files (direct files)
+            supported_os=$(ls "$plugin_dir"/*.sh 2>/dev/null | sed 's|.*/||; s|.sh||' | grep -v 'generic' | tr '\n' ',' | sed 's/,$//')
+            
+            # If no direct .sh files, check for subdirectory structure
+            if [ -z "$supported_os" ]; then
+              # Check for OS-specific subdirectories
+              os_dirs=$(find "$plugin_dir" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+                if [ -f "$dir/latest.sh" ] || [ -f "$dir"/*.sh ]; then
+                  basename "$dir"
+                fi
+              done | grep -v generic | tr '\n' ',' | sed 's/,$//')
+              
+              if [ -n "$os_dirs" ]; then
+                supported_os="$os_dirs"
+              fi
+            fi
+            
+            # If no specific OS scripts, check if generic exists (direct or subdirectory)
+            if [ -z "$supported_os" ] && ([ -f "$plugin_dir/generic.sh" ] || [ -f "$plugin_dir/generic/latest.sh" ]); then
+              supported_os="generic"
+            fi
+            
+            # Add to list with proper format
+            if [ -n "$supported_os" ]; then
+              echo "$plugin_name:$category:$supported_os" >> plugins/list.txt
+            else
+              echo "$plugin_name:$category" >> plugins/list.txt
+            fi
+          done
+          
+          # Add trailing newlines for consistency
+          echo "" >> plugins/list.txt
+          echo "" >> plugins/list.txt
+          
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'Update plugin list.txt'
+          add: 'plugins/list.txt' 

@@ -1,0 +1,77 @@
+{
+  "name": "nginx",
+  "display_name": "NGINX Web Server",
+  "description": "High-performance web server with intelligent configuration tuning based on server resources",
+  "category": "webservers",
+  "version": "1.0.0",
+  "author": "moonshadowrev",
+  "license": "GPLv3",
+  "tags": ["web", "server", "nginx", "performance", "tuning"],
+  "features": [
+    "Automatic server resource detection",
+    "Performance tuning based on server profile",
+    "Kernel parameter optimization",
+    "SSL/TLS configuration",
+    "Gzip compression optimization",
+    "Worker process optimization"
+  ],
+  "supported_os": {
+    "debian": {
+      "versions": ["latest", "20.04", "18.04", "11", "10"],
+      "package_manager": "apt",
+      "service_manager": "systemd"
+    },
+    "rhel": {
+      "versions": ["latest", "8", "7"],
+      "package_manager": "yum",
+      "service_manager": "systemd"
+    },
+    "arch": {
+      "versions": ["latest"],
+      "package_manager": "pacman",
+      "service_manager": "systemd"
+    }
+  },
+  "server_profiles": [
+    {
+      "name": "low-end",
+      "description": "Low end server (1 vCPU + 4GB RAM)",
+      "worker_processes": 1,
+      "worker_connections": 512,
+      "multi_accept": false,
+      "gzip": false
+    },
+    {
+      "name": "mid-level",
+      "description": "Mid level (4 vCPU + 16GB RAM)",
+      "worker_processes": 4,
+      "worker_connections": 2048,
+      "multi_accept": true,
+      "gzip": true
+    },
+    {
+      "name": "high-level",
+      "description": "High level (8+ vCPU + 32GB+ RAM)",
+      "worker_processes": "auto",
+      "worker_connections": 4096,
+      "multi_accept": true,
+      "gzip": true
+    }
+  ],
+  "dependencies": [],
+  "conflicts": ["apache2", "httpd"],
+  "installation_time": "2-5 minutes",
+  "documentation": "https://nginx.org/en/docs/",
+  "support_url": "https://github.com/moonshadowrev/eXtensibleSH/issues",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-01-01",
+      "changes": [
+        "Initial release with multi-OS support",
+        "Added server profile-based tuning",
+        "Kernel parameter optimization"
+      ]
+    }
+  ]
+} 

@@ -1,0 +1,7 @@
+# eXtensibleSH Plugins List
+# Format: plugin-name:category:supported-os
+# Categories: webservers, databases, containerization, monitoring, security, storage, development, networking, backup
+
+
+nginx:webservers:debian,rhel,arch
+

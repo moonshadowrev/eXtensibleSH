@@ -1,0 +1,252 @@
+name: Update Third-Party List
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'thirdparty/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'thirdparty/**'
+
+jobs:
+  update-list:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl wget
+          
+      - name: Validate third-party scripts
+        run: |
+          echo "Validating third-party script entries..."
+          valid_count=0
+          invalid_count=0
+          
+          while IFS=':' read -r name category url description; do
+            # Skip comments and empty lines
+            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+              continue
+            fi
+            
+            echo "Validating: $name"
+            
+            # Basic URL accessibility check (allow redirects)
+            if curl -s -L -I "$url" | head -1 | grep -q "200\|301\|302"; then
+              echo "✓ $name - URL accessible"
+              ((valid_count++))
+            else
+              echo "⚠️  $name - URL may not be accessible: $url"
+              ((invalid_count++))
+              # Don't fail the build, just warn
+            fi
+            
+          done < thirdparty/list.txt
+          
+          echo "Validation complete: $valid_count valid, $invalid_count warnings"
+          
+      - name: Generate sorted third-party list
+        run: |
+          echo "Generating sorted third-party list..."
+          
+          # Create temporary file for processing
+          temp_file=$(mktemp)
+          
+          # Extract comments and header, preserve structure
+          awk '
+          /^#/ { print; next }
+          /^$/ { print; next }
+          { 
+            split($0, parts, ":")
+            if (length(parts) >= 4) {
+              category = parts[2]
+              name = parts[1]
+              # Store for sorting within categories
+              entries[category][name] = $0
+            }
+          }
+          END {
+            # Print entries grouped by category
+            categories["containerization"] = "# Container & Orchestration"
+            categories["webservers"] = "# Web Servers & Load Balancers"
+            categories["monitoring"] = "# Monitoring & Observability"
+            categories["development"] = "# Development Tools"
+            categories["databases"] = "# Databases & Storage"
+            categories["security"] = "# Security & VPN"
+            categories["storage"] = "# File Sharing & Backup"
+            categories["misc"] = "# System Utilities"
+            
+            for (cat in categories) {
+              if (length(entries[cat]) > 0) {
+                print categories[cat]
+                for (name in entries[cat]) {
+                  print entries[cat][name]
+                }
+                print ""
+              }
+            }
+          }' thirdparty/list.txt > "$temp_file"
+          
+          # Only update if the file has valid content
+          if [ -s "$temp_file" ]; then
+            # Preserve header comments
+            head -4 thirdparty/list.txt > thirdparty/list.txt.new
+            echo "" >> thirdparty/list.txt.new
+            tail -n +5 "$temp_file" >> thirdparty/list.txt.new
+            mv thirdparty/list.txt.new thirdparty/list.txt
+          fi
+          
+          rm -f "$temp_file"
+          
+      - name: Generate third-party registry
+        run: |
+          echo "Generating third-party registry..."
+          
+          # Create registry JSON file
+          cat > thirdparty/registry.json << 'EOF'
+{
+  "last_updated": "",
+  "total_scripts": 0,
+  "categories": {
+    "containerization": "Container & Orchestration",
+    "webservers": "Web Servers & Load Balancers",
+    "monitoring": "Monitoring & Observability", 
+    "development": "Development Tools",
+    "databases": "Databases & Storage",
+    "security": "Security & VPN",
+    "storage": "File Sharing & Backup",
+    "misc": "System Utilities"
+  },
+  "scripts": []
+}
+EOF
+          
+          # Update timestamp
+          jq --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" '.last_updated = $timestamp' thirdparty/registry.json > temp.json && mv temp.json thirdparty/registry.json
+          
+          # Add scripts
+          script_count=0
+          while IFS=':' read -r name category url description; do
+            # Skip comments and empty lines
+            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+              continue
+            fi
+            
+            # Add script to registry
+            jq --arg name "$name" --arg category "$category" --arg url "$url" --arg description "$description" \
+               '.scripts += [{"name": $name, "category": $category, "url": $url, "description": $description}]' \
+               thirdparty/registry.json > temp.json && mv temp.json thirdparty/registry.json
+            
+            ((script_count++))
+          done < thirdparty/list.txt
+          
+          # Update total count
+          jq --arg count "$script_count" '.total_scripts = ($count | tonumber)' thirdparty/registry.json > temp.json && mv temp.json thirdparty/registry.json
+          
+          echo "Generated registry with $script_count scripts"
+          
+      - name: Generate script files
+        run: |
+          echo "Generating script files..."
+          
+          # Remove old generated scripts (keep README.md and list.txt)
+          find thirdparty -name "*.sh" -not -name "manual-*" -delete 2>/dev/null || true
+          
+          while IFS=':' read -r name category url description; do
+            # Skip comments and empty lines
+            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+              continue
+            fi
+            
+            echo "Creating script file: $name.sh"
+            
+            # Create enhanced script file with better error handling
+            cat > "thirdparty/$name.sh" << EOF
+#!/bin/bash
+# Third-party script: $name
+# Category: $category
+# Description: $description
+# Source: $url
+# Generated by eXtensibleSH workflow
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "\${GREEN}Installing $name...\${NC}"
+echo -e "\${YELLOW}Description: $description\${NC}"
+echo -e "\${YELLOW}Source: $url\${NC}"
+echo
+
+# Check if running as root when needed
+if [[ "\$EUID" -ne 0 ]] && [[ "$category" =~ ^(containerization|databases|security|webservers|storage)\$ ]]; then
+    echo -e "\${YELLOW}Warning: This script may require root privileges.\${NC}"
+    echo "You may need to run: sudo \$0"
+fi
+
+# Download and execute with error handling
+if command -v curl >/dev/null 2>&1; then
+    echo -e "\${GREEN}Downloading and executing installation script...\${NC}"
+    if curl -fsSL "$url" | bash; then
+        echo -e "\${GREEN}✓ $name installation completed successfully!\${NC}"
+    else
+        echo -e "\${RED}✗ Installation failed. Please check the source URL manually.\${NC}"
+        echo -e "\${YELLOW}Manual installation: $url\${NC}"
+        exit 1
+    fi
+elif command -v wget >/dev/null 2>&1; then
+    echo -e "\${GREEN}Downloading and executing installation script...\${NC}"
+    if wget -qO- "$url" | bash; then
+        echo -e "\${GREEN}✓ $name installation completed successfully!\${NC}"
+    else
+        echo -e "\${RED}✗ Installation failed. Please check the source URL manually.\${NC}"
+        echo -e "\${YELLOW}Manual installation: $url\${NC}"
+        exit 1
+    fi
+else
+    echo -e "\${RED}✗ Neither curl nor wget found. Please install one of them first.\${NC}"
+    exit 1
+fi
+EOF
+            
+            chmod +x "thirdparty/$name.sh"
+          done < thirdparty/list.txt
+          
+          echo "Generated $(ls thirdparty/*.sh 2>/dev/null | wc -l) script files"
+          
+      - name: Validate generated files
+        run: |
+          echo "Validating generated files..."
+          
+          # Check registry JSON is valid
+          if jq empty thirdparty/registry.json; then
+            echo "✓ Registry JSON is valid"
+          else
+            echo "✗ Registry JSON is invalid"
+            exit 1
+          fi
+          
+          # Check script files have proper permissions
+          script_count=0
+          for script in thirdparty/*.sh; do
+            if [ -f "$script" ] && [ -x "$script" ]; then
+              ((script_count++))
+            fi
+          done
+          
+          echo "✓ Generated $script_count executable script files"
+          
+      - name: Commit changes
+        if: github.event_name == 'push'
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'Update third-party list and registry [automated]'
+          add: 'thirdparty/' 

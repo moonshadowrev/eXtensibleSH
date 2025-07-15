@@ -1,0 +1,56 @@
+{
+  "name": "template",
+  "display_name": "Plugin Template",
+  "description": "Template for creating new eXtensibleSH plugins with best practices and examples",
+  "category": "development",
+  "version": "1.0.0",
+  "author": "moonshadowrev",
+  "license": "GPLv3",
+  "tags": ["template", "development", "example", "plugin"],
+  "development_only": true,
+  "features": [
+    "Standardized plugin structure",
+    "OS detection examples",
+    "Logging integration",
+    "Error handling patterns",
+    "Interactive menu examples",
+    "Parameter parsing examples"
+  ],
+  "supported_os": {
+    "generic": {
+      "versions": ["latest"],
+      "package_manager": "auto-detect",
+      "service_manager": "auto-detect"
+    }
+  },
+  "server_profiles": [
+    {
+      "name": "low-end",
+      "description": "Example low-end server configuration"
+    },
+    {
+      "name": "mid-level", 
+      "description": "Example mid-level server configuration"
+    },
+    {
+      "name": "high-level",
+      "description": "Example high-level server configuration"
+    }
+  ],
+  "dependencies": [],
+  "conflicts": [],
+  "installation_time": "1 minute",
+  "documentation": "https://github.com/moonshadowrev/eXtensibleSH/blob/main/docs/how-to-create-plugin.md",
+  "support_url": "https://github.com/moonshadowrev/eXtensibleSH/issues",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-01-01",
+      "changes": [
+        "Initial template with best practices",
+        "Added comprehensive examples",
+        "Structured parameter handling"
+      ]
+    }
+  ]
+} 

@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eXtensibleSH - Plugin-Based Self-Hosting Made Easy</title>
+    <meta name="description" content="eXtensibleSH is a plugin-extensible Bash framework for easy self-hosting. Install and configure services automatically with OS-aware plugins via simple curl commands.">
+    <meta name="keywords" content="self-hosting, bash, linux, plugins, nginx, docker, automation, devops, server management">
+    <meta name="author" content="moonshadowrev">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://moonshadowrev.github.io/eXtensibleSH/">
+    <meta property="og:title" content="eXtensibleSH - Plugin-Based Self-Hosting Made Easy">
+    <meta property="og:description" content="eXtensibleSH is a plugin-extensible Bash framework for easy self-hosting. Install and configure services automatically with OS-aware plugins via simple curl commands.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/docs/image.webp">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://moonshadowrev.github.io/eXtensibleSH/">
+    <meta property="twitter:title" content="eXtensibleSH - Plugin-Based Self-Hosting Made Easy">
+    <meta property="twitter:description" content="eXtensibleSH is a plugin-extensible Bash framework for easy self-hosting. Install and configure services automatically with OS-aware plugins via simple curl commands.">
+    <meta property="twitter:image" content="https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/docs/image.webp">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --text-muted: #656d76;
+            --accent-primary: #238636;
+            --accent-secondary: #1f6feb;
+            --accent-tertiary: #f85149;
+            --border-color: #30363d;
+            --border-muted: #21262d;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            padding: 80px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><radialGradient id="a" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%23238636" stop-opacity="0.1"/><stop offset="100%" stop-color="%23238636" stop-opacity="0"/></radialGradient></defs><rect width="100" height="20" fill="url(%23a)"/></svg>') repeat;
+            opacity: 0.1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-image {
+            margin: 2rem 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px var(--shadow-color);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2ea043;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(35, 134, 54, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+            transform: translateY(-2px);
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--text-primary);
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px var(--shadow-color);
+            border-color: var(--accent-primary);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Quick Start Section */
+        .quickstart {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-block {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            white-space: pre;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-secondary);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #1f6feb;
+        }
+
+        /* Stats Section */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            display: block;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-secondary);
+            padding: 3rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--accent-primary);
+        }
+
+        .footer-bottom {
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-muted);
+            color: var(--text-muted);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 280px;
+                justify-content: center;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            header {
+                padding: 60px 0;
+            }
+
+            section {
+                padding: 60px 0;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus styles */
+        .btn:focus,
+        .copy-btn:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            margin: 2% auto;
+            padding: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            height: 80vh;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-tabs {
+            display: flex;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .modal-tab.active {
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .modal-tab:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            height: calc(100% - 200px);
+            overflow-y: auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .plugin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .plugin-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plugin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(45deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .plugin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent-primary);
+        }
+
+        .plugin-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .plugin-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .plugin-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge-category {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        .badge-os {
+            background-color: var(--accent-secondary);
+            color: white;
+        }
+
+        .badge-status {
+            background-color: var(--accent-tertiary);
+            color: white;
+        }
+
+        .plugin-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(35, 134, 54, 0.2);
+        }
+
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .filter-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--accent-tertiary);
+        }
+
+        .error-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">eXtensibleSH</h1>
+                <p class="hero-subtitle">Plugin-based self-hosting made easy. Install and configure services automatically with OS-aware plugins via simple curl commands.</p>
+                
+                <div class="hero-image">
+                    <img src="https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/docs/image.webp" alt="eXtensibleSH - Self-hosting made easy" loading="lazy">
+                </div>
+
+                <div class="cta-buttons">
+                    <a href="#quickstart" class="btn btn-primary">
+                        🚀 Get Started
+                    </a>
+                    <button onclick="openPluginModal()" class="btn btn-secondary">
+                        🔌 Browse Plugins
+                    </button>
+                    <a href="https://github.com/moonshadowrev/eXtensibleSH" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                        📚 View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section>
+        <div class="container">
+            <h2 class="section-title">Why Choose eXtensibleSH?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔌</div>
+                    <h3 class="feature-title">Plugin-Based Architecture</h3>
+                    <p class="feature-description">Extend functionality with community-driven plugins for NGINX, Docker, databases, and more. Create custom plugins for your specific needs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3 class="feature-title">One-Command Execution</h3>
+                    <p class="feature-description">Run directly from GitHub with a single curl command. No downloads, no installations, no hassle. Just pure automation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🐧</div>
+                    <h3 class="feature-title">OS-Aware Intelligence</h3>
+                    <p class="feature-description">Smart OS detection supports Debian, Ubuntu, RHEL, CentOS, Arch, and more. Automatically adapts to your system.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3 class="feature-title">Secure & Logged</h3>
+                    <p class="feature-description">Built-in logging, security best practices, and safe execution patterns. Track every action with detailed logs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3 class="feature-title">Interactive & Intuitive</h3>
+                    <p class="feature-description">Beautiful terminal UI with server profile selection and guided configuration. Perfect for beginners and experts alike.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h3 class="feature-title">Community Driven</h3>
+                    <p class="feature-description">Open-source project with active community. Contribute plugins, report issues, and help improve the ecosystem.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart">
+        <div class="container">
+            <h2 class="section-title">Quick Start</h2>
+            <div class="quickstart">
+                <h3>🚀 Run the interactive menu:</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash')">Copy</button>
+                    <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash</code>
+                </div>
+
+                <h3>🎯 Run with a specific plugin:</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx')">Copy</button>
+                    <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx</code>
+                </div>
+
+                <h3>📋 View available plugins:</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/list.txt')">Copy</button>
+                    <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/list.txt</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2 class="section-title">Project Stats</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">10+</span>
+                    <span class="stat-label">Supported OS Distributions</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">Growing</span>
+                    <span class="stat-label">Plugin Ecosystem</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Open Source</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">0</span>
+                    <span class="stat-label">Local Dependencies</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Documentation</h3>
+                    <ul>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/blob/main/docs/usage.md" target="_blank" rel="noopener noreferrer">Usage Guide</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/blob/main/docs/how-to-create-plugin.md" target="_blank" rel="noopener noreferrer">Create a Plugin</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/wiki" target="_blank" rel="noopener noreferrer">Wiki</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Community</h3>
+                    <ul>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/issues" target="_blank" rel="noopener noreferrer">Report Issues</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/discussions" target="_blank" rel="noopener noreferrer">Discussions</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Project</h3>
+                    <ul>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributing</a></li>
+                        <li><a href="https://github.com/moonshadowrev/eXtensibleSH/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 eXtensibleSH. Licensed under GPLv3. Made with ❤️ by <a href="https://github.com/moonshadowrev" target="_blank" rel="noopener noreferrer">moonshadowrev</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Plugin/ThirdParty Modal -->
+    <div id="pluginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🔌 eXtensibleSH Ecosystem</h2>
+                <button class="modal-close" onclick="closePluginModal()">&times;</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" onclick="switchTab('plugins')">
+                    🔌 Official Plugins
+                </button>
+                <button class="modal-tab" onclick="switchTab('thirdparty')">
+                    🌟 Third-Party Scripts
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="plugins-tab" class="tab-content active">
+                    <input type="text" class="search-box" placeholder="🔍 Search plugins..." id="plugin-search" oninput="filterPlugins()">
+                    <div class="category-filter" id="plugin-categories">
+                        <button class="filter-btn active" onclick="filterByCategory('all', 'plugins')">All</button>
+                        <button class="filter-btn" onclick="filterByCategory('webservers', 'plugins')">🌐 Web Servers</button>
+                        <button class="filter-btn" onclick="filterByCategory('databases', 'plugins')">💾 Databases</button>
+                        <button class="filter-btn" onclick="filterByCategory('containerization', 'plugins')">🐳 Containers</button>
+                        <button class="filter-btn" onclick="filterByCategory('monitoring', 'plugins')">📊 Monitoring</button>
+                        <button class="filter-btn" onclick="filterByCategory('security', 'plugins')">🔒 Security</button>
+                        <button class="filter-btn" onclick="filterByCategory('storage', 'plugins')">💿 Storage</button>
+                    </div>
+                    <div id="plugins-content">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>Loading plugins...</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="thirdparty-tab" class="tab-content">
+                    <input type="text" class="search-box" placeholder="🔍 Search third-party scripts..." id="thirdparty-search" oninput="filterThirdParty()">
+                    <div class="category-filter" id="thirdparty-categories">
+                        <button class="filter-btn active" onclick="filterByCategory('all', 'thirdparty')">All</button>
+                        <button class="filter-btn" onclick="filterByCategory('webservers', 'thirdparty')">🌐 Web Servers</button>
+                        <button class="filter-btn" onclick="filterByCategory('databases', 'thirdparty')">💾 Databases</button>
+                        <button class="filter-btn" onclick="filterByCategory('containerization', 'thirdparty')">🐳 Containers</button>
+                        <button class="filter-btn" onclick="filterByCategory('monitoring', 'thirdparty')">📊 Monitoring</button>
+                        <button class="filter-btn" onclick="filterByCategory('security', 'thirdparty')">🔒 Security</button>
+                        <button class="filter-btn" onclick="filterByCategory('storage', 'thirdparty')">💿 Storage</button>
+                        <button class="filter-btn" onclick="filterByCategory('misc', 'thirdparty')">🛠️ Miscellaneous</button>
+                    </div>
+                    <div id="thirdparty-content">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                            <p>Loading third-party scripts...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for data
+        let pluginsData = [];
+        let thirdpartyData = [];
+        let currentPluginFilter = 'all';
+        let currentThirdPartyFilter = 'all';
+
+        // Category icons mapping
+        const categoryIcons = {
+            'webservers': '🌐',
+            'databases': '💾',
+            'containerization': '🐳',
+            'monitoring': '📊',
+            'security': '🔒',
+            'storage': '💿',
+            'development': '🔧',
+            'misc': '🛠️'
+        };
+
+        // Copy to clipboard functionality
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = 'var(--accent-primary)';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'var(--accent-secondary)';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // Modal functionality
+        function openPluginModal() {
+            document.getElementById('pluginModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            loadPlugins();
+            loadThirdParty();
+        }
+
+        function closePluginModal() {
+            document.getElementById('pluginModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Load plugins from GitHub
+        async function loadPlugins() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/list.txt');
+                const text = await response.text();
+                
+                pluginsData = [];
+                const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+                
+                for (const line of lines) {
+                    const parts = line.split(':');
+                    if (parts.length >= 3) {
+                        const [name, category, os] = parts;
+                        
+                        // Try to fetch metadata
+                        try {
+                            const metadataResponse = await fetch(`https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/${category}/${name}/metadata.json`);
+                            if (metadataResponse.ok) {
+                                const metadata = await metadataResponse.json();
+                                pluginsData.push({
+                                    name: name,
+                                    category: category,
+                                    os: os.split(','),
+                                    displayName: metadata.display_name || name,
+                                    description: metadata.description || 'No description available',
+                                    version: metadata.version || '1.0.0',
+                                    author: metadata.author || 'Unknown',
+                                    features: metadata.features || []
+                                });
+                            } else {
+                                // Fallback if no metadata
+                                pluginsData.push({
+                                    name: name,
+                                    category: category,
+                                    os: os.split(','),
+                                    displayName: name,
+                                    description: 'No description available',
+                                    version: '1.0.0',
+                                    author: 'Unknown',
+                                    features: []
+                                });
+                            }
+                        } catch (err) {
+                            // Fallback for metadata fetch errors
+                            pluginsData.push({
+                                name: name,
+                                category: category,
+                                os: os.split(','),
+                                displayName: name,
+                                description: 'No description available',
+                                version: '1.0.0',
+                                author: 'Unknown',
+                                features: []
+                            });
+                        }
+                    }
+                }
+                
+                renderPlugins();
+            } catch (error) {
+                console.error('Error loading plugins:', error);
+                document.getElementById('plugins-content').innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">❌</div>
+                        <h3>Failed to load plugins</h3>
+                        <p>Please check your internet connection and try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load third-party scripts from GitHub
+        async function loadThirdParty() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/thirdparty/list.txt');
+                const text = await response.text();
+                
+                thirdpartyData = [];
+                const lines = text.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+                
+                for (const line of lines) {
+                    const parts = line.split(':');
+                    if (parts.length >= 4) {
+                        const [name, category, url, description] = parts;
+                        thirdpartyData.push({
+                            name: name,
+                            category: category,
+                            url: url,
+                            description: description,
+                            author: 'Community'
+                        });
+                    }
+                }
+                
+                renderThirdParty();
+            } catch (error) {
+                console.error('Error loading third-party scripts:', error);
+                document.getElementById('thirdparty-content').innerHTML = `
+                    <div class="error-state">
+                        <div class="error-state-icon">❌</div>
+                        <h3>Failed to load third-party scripts</h3>
+                        <p>Please check your internet connection and try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Render plugins
+        function renderPlugins() {
+            const container = document.getElementById('plugins-content');
+            const searchTerm = document.getElementById('plugin-search').value.toLowerCase();
+            
+            let filteredPlugins = pluginsData.filter(plugin => {
+                const matchesSearch = plugin.name.toLowerCase().includes(searchTerm) || 
+                                    plugin.displayName.toLowerCase().includes(searchTerm) ||
+                                    plugin.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = currentPluginFilter === 'all' || plugin.category === currentPluginFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filteredPlugins.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>No plugins found</h3>
+                        <p>Try adjusting your search or filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const pluginCards = filteredPlugins.map(plugin => `
+                <div class="plugin-card">
+                    <div class="plugin-icon">${categoryIcons[plugin.category] || '🔌'}</div>
+                    <div class="plugin-name">${plugin.displayName}</div>
+                    <div class="plugin-description">${plugin.description}</div>
+                    <div class="plugin-meta">
+                        <span class="plugin-badge badge-category">${plugin.category}</span>
+                        <span class="plugin-badge badge-os">${plugin.os.join(', ')}</span>
+                        <span class="plugin-badge badge-status">v${plugin.version}</span>
+                    </div>
+                    <div class="plugin-actions">
+                        <button class="action-btn" onclick="copyInstallCommand('${plugin.name}', '${plugin.category}')">
+                            📋 Copy Install
+                        </button>
+                        <a href="https://github.com/moonshadowrev/eXtensibleSH/tree/main/plugins/${plugin.category}/${plugin.name}" target="_blank" class="action-btn">
+                            🔗 View Source
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="plugin-grid">${pluginCards}</div>`;
+        }
+
+        // Render third-party scripts
+        function renderThirdParty() {
+            const container = document.getElementById('thirdparty-content');
+            const searchTerm = document.getElementById('thirdparty-search').value.toLowerCase();
+            
+            let filteredScripts = thirdpartyData.filter(script => {
+                const matchesSearch = script.name.toLowerCase().includes(searchTerm) || 
+                                    script.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = currentThirdPartyFilter === 'all' || script.category === currentThirdPartyFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filteredScripts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔍</div>
+                        <h3>No third-party scripts found</h3>
+                        <p>Try adjusting your search or filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const scriptCards = filteredScripts.map(script => `
+                <div class="plugin-card">
+                    <div class="plugin-icon">${categoryIcons[script.category] || '🌟'}</div>
+                    <div class="plugin-name">${script.name}</div>
+                    <div class="plugin-description">${script.description}</div>
+                    <div class="plugin-meta">
+                        <span class="plugin-badge badge-category">${script.category}</span>
+                        <span class="plugin-badge badge-status">Third-Party</span>
+                    </div>
+                    <div class="plugin-actions">
+                        <button class="action-btn" onclick="copyThirdPartyCommand('${script.name}')">
+                            📋 Copy Install
+                        </button>
+                        <a href="${script.url}" target="_blank" class="action-btn">
+                            🔗 View Source
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="plugin-grid">${scriptCards}</div>`;
+        }
+
+        // Filter functions
+        function filterByCategory(category, type) {
+            const buttons = document.querySelectorAll(`#${type}-categories .filter-btn`);
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (type === 'plugins') {
+                currentPluginFilter = category;
+                renderPlugins();
+            } else {
+                currentThirdPartyFilter = category;
+                renderThirdParty();
+            }
+        }
+
+        function filterPlugins() {
+            renderPlugins();
+        }
+
+        function filterThirdParty() {
+            renderThirdParty();
+        }
+
+        // Copy command functions
+        function copyInstallCommand(pluginName, category) {
+            const command = `curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s ${pluginName} ${category}`;
+            copyToClipboard(command);
+        }
+
+        function copyThirdPartyCommand(scriptName) {
+            const command = `curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s ${scriptName}`;
+            copyToClipboard(command);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('pluginModal');
+            if (event.target === modal) {
+                closePluginModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closePluginModal();
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,42 @@
+# eXtensibleSH .gitignore
+# Ignores temporary files and logs while preserving directory structure
+
+# Log files
+logs/*.log
+logs/exsh-log-*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test files
+test_*.sh
+test_*.json
+test_*.txt
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Git hooks installation backup
+.git/hooks/pre-commit.backup

@@ -1,0 +1,19 @@
+# Third-party Scripts List
+# Format: name:category:url:description
+# Example: my-script:webservers:https://github.com/user/repo/raw/main/script.sh:Description here
+
+# Container & Orchestration
+docker-install:containerization:https://get.docker.com:Official Docker installation script
+
+# Monitoring
+netdata-install:monitoring:https://my-netdata.io/kickstart.sh:Real-time performance monitoring
+
+# Development Tools
+nvm-install:development:https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh:Node Version Manager
+
+# Security & VPN
+wireguard-install:security:https://raw.githubusercontent.com/angristan/wireguard-install/master/wireguard-install.sh:WireGuard VPN server installer
+openvpn-install:security:https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh:OpenVPN server installer
+
+# File Management
+rclone-install:storage:https://rclone.org/install.sh:Cloud storage sync utility
