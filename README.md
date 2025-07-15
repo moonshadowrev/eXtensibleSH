@@ -818,20 +818,6 @@ Robust error handling and recovery
 
 ---
 
-## 📊 Project Statistics
-
-<div align="center">
-
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=moonshadowrev&repo=eXtensibleSH&show_icons=true&theme=dark&hide_border=true&bg_color=0D1117)
-
-![Language Stats](https://github-readme-stats.vercel.app/api/top-langs/?username=moonshadowrev&repo=eXtensibleSH&layout=compact&theme=dark&hide_border=true&bg_color=0D1117)
-
-</div>
-
-<br>
-
----
-
 ## 🌐 Links & Resources
 
 <div align="center">
