@@ -103,11 +103,6 @@ Install specific services directly:
 # Install NGINX web server
 curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx webservers
 
-# Install Docker with containerization
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s docker containerization
-
-# Install PostgreSQL database
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s postgresql databases
 ```
 
 <br>

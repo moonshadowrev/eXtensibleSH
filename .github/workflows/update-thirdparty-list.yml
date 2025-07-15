@@ -72,12 +72,12 @@ jobs:
           END {
             # Print entries grouped by category
             categories["containerization"] = "# Container & Orchestration"
-            categories["webservers"] = "# Web Servers & Load Balancers"
-            categories["monitoring"] = "# Monitoring & Observability"
+            categories["webservers"] = "# Web Servers"
+            categories["monitoring"] = "# Monitoring"
             categories["development"] = "# Development Tools"
-            categories["databases"] = "# Databases & Storage"
+            categories["databases"] = "# Database Tools"
             categories["security"] = "# Security & VPN"
-            categories["storage"] = "# File Sharing & Backup"
+            categories["storage"] = "# File Management"
             categories["misc"] = "# System Utilities"
             
             for (cat in categories) {
@@ -106,27 +106,22 @@ jobs:
         run: |
           echo "Generating third-party registry..."
           
-          # Create registry JSON file
-          cat > thirdparty/registry.json << 'EOF'
-{
-  "last_updated": "",
-  "total_scripts": 0,
-  "categories": {
-    "containerization": "Container & Orchestration",
-    "webservers": "Web Servers & Load Balancers",
-    "monitoring": "Monitoring & Observability", 
-    "development": "Development Tools",
-    "databases": "Databases & Storage",
-    "security": "Security & VPN",
-    "storage": "File Sharing & Backup",
-    "misc": "System Utilities"
-  },
-  "scripts": []
-}
-EOF
-          
-          # Update timestamp
-          jq --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" '.last_updated = $timestamp' thirdparty/registry.json > temp.json && mv temp.json thirdparty/registry.json
+          # Create basic registry structure using jq
+          echo '{}' | jq '{
+            "last_updated": now | strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "total_scripts": 0,
+            "categories": {
+              "containerization": "Container & Orchestration",
+              "webservers": "Web Servers",
+              "monitoring": "Monitoring",
+              "development": "Development Tools",
+              "databases": "Database Tools",
+              "security": "Security & VPN",
+              "storage": "File Management",
+              "misc": "System Utilities"
+            },
+            "scripts": []
+          }' > thirdparty/registry.json
           
           # Add scripts
           script_count=0
@@ -165,7 +160,7 @@ EOF
             echo "Creating script file: $name.sh"
             
             # Create enhanced script file with better error handling
-            cat > "thirdparty/$name.sh" << EOF
+            cat > "thirdparty/$name.sh" <<EOF
 #!/bin/bash
 # Third-party script: $name
 # Category: $category

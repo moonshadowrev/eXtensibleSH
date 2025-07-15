@@ -14,13 +14,11 @@ jobs:
       - name: Generate plugin list
         run: |
           # Initialize plugins/list.txt with header
-          cat > plugins/list.txt << 'EOF'
-# eXtensibleSH Plugins List
-# Format: plugin-name:category:supported-os
-# Categories: webservers, databases, containerization, monitoring, security, storage, development, networking, backup
-
-
-EOF
+          echo "# eXtensibleSH Plugins List" > plugins/list.txt
+          echo "# Format: plugin-name:category:supported-os" >> plugins/list.txt
+          echo "# Categories: webservers, databases, containerization, monitoring, security, storage, development, networking, backup" >> plugins/list.txt
+          echo "" >> plugins/list.txt
+          echo "" >> plugins/list.txt
 
           # Find all plugin directories and process them
           for plugin_dir in $(find plugins -mindepth 2 -maxdepth 2 -type d | sort); do
