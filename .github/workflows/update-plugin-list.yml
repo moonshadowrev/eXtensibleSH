@@ -12,6 +12,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    # Skip if this is from our automated PRs to prevent loops
+    if: |
+      !contains(github.event.head_commit.message, 'Auto-update: Plugin List') &&
+      !contains(github.event.head_commit.message, '[automated]') &&
+      !(startsWith(github.event.head_commit.message, 'Merge pull request') && contains(github.event.head_commit.message, 'Auto-update'))
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -98,7 +103,17 @@ jobs:
           
           echo "Generated plugin list with $plugin_count plugins"
           
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Create Pull Request
+        if: steps.verify-changed-files.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
