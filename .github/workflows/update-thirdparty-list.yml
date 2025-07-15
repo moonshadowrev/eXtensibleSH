@@ -13,6 +13,9 @@ on:
 jobs:
   update-list:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       
@@ -247,10 +250,13 @@ jobs:
           
           echo "✓ Generated $script_count executable script files"
           
-      - name: Commit changes
+      - name: Create Pull Request
         if: github.event_name == 'push'
-        uses: EndBug/add-and-commit@v9
+        uses: peter-evans/create-pull-request@v5
         with:
-          github_token: ${{ secrets.PAT_TOKEN }}
-          message: 'Update third-party list and registry [automated]'
-          add: 'thirdparty/' 
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'Update third-party list and registry [automated]'
+          title: 'Auto-update: Third-party List and Registry'
+          body: 'Automated update of third-party scripts list and registry'
+          branch: update-thirdparty-list
+          delete-branch: true 

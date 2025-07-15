@@ -9,6 +9,9 @@ on:
 jobs:
   update-list:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
@@ -95,9 +98,12 @@ jobs:
           
           echo "Generated plugin list with $plugin_count plugins"
           
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v9
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
         with:
-          github_token: ${{ secrets.PAT_TOKEN }}
-          message: 'Update plugin list.txt'
-          add: 'plugins/list.txt' 
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'Update plugin list.txt'
+          title: 'Auto-update: Plugin List'
+          body: 'Automated update of plugin list based on directory structure'
+          branch: update-plugin-list
+          delete-branch: true 
