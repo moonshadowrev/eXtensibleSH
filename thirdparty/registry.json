@@ -1,0 +1,46 @@
+{
+  "last_updated": "2025-07-15T22:49:12Z",
+  "total_scripts": 5,
+  "categories": {
+    "containerization": "Container & Orchestration",
+    "webservers": "Web Servers",
+    "monitoring": "Monitoring",
+    "development": "Development Tools",
+    "databases": "Database Tools",
+    "security": "Security & VPN",
+    "storage": "File Management",
+    "misc": "System Utilities"
+  },
+  "scripts": [
+    {
+      "name": "docker-install",
+      "category": "containerization",
+      "url": "https://get.docker.com",
+      "description": "Official Docker installation script"
+    },
+    {
+      "name": "netdata-install",
+      "category": "monitoring",
+      "url": "https://my-netdata.io/kickstart.sh",
+      "description": "Real-time performance monitoring"
+    },
+    {
+      "name": "nvm-install",
+      "category": "development",
+      "url": "https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh",
+      "description": "Node Version Manager"
+    },
+    {
+      "name": "wireguard-install",
+      "category": "security",
+      "url": "https://raw.githubusercontent.com/angristan/wireguard-install/master/wireguard-install.sh",
+      "description": "WireGuard VPN server installer"
+    },
+    {
+      "name": "openvpn-install",
+      "category": "security",
+      "url": "https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh",
+      "description": "OpenVPN server installer"
+    }
+  ]
+}
