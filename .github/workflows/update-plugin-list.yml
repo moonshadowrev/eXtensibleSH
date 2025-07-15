@@ -11,8 +11,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          set -e  # Exit on any error
+          
+          echo "Installing dependencies..."
+          sudo apt-get update -q
+          sudo apt-get install -y jq
+          
+          # Verify installation
+          echo "Verifying installation:"
+          jq --version
+          echo "✓ Dependencies installed successfully"
+          
       - name: Generate plugin list
         run: |
+          set -e  # Exit on any error
+          
           # Initialize plugins/list.txt with header
           echo "# eXtensibleSH Plugins List" > plugins/list.txt
           echo "# Format: plugin-name:category:supported-os" >> plugins/list.txt
@@ -21,32 +36,36 @@ jobs:
           echo "" >> plugins/list.txt
 
           # Find all plugin directories and process them
-          for plugin_dir in $(find plugins -mindepth 2 -maxdepth 2 -type d | sort); do
+          plugin_count=0
+          while IFS= read -r -d '' plugin_dir; do
             plugin_name=$(basename "$plugin_dir")
             category=$(basename "$(dirname "$plugin_dir")")
             
+            echo "Processing plugin: $plugin_name in category: $category"
+            
             # Skip if no metadata.json exists
             if [ ! -f "$plugin_dir/metadata.json" ]; then
+              echo "  -> Skipping (no metadata.json)"
               continue
             fi
             
             # Check if this is a development-only plugin
-            if jq -r '.development_only // false' "$plugin_dir/metadata.json" | grep -q true; then
-              echo "Skipping development-only plugin: $plugin_name"
+            if jq -r '.development_only // false' "$plugin_dir/metadata.json" 2>/dev/null | grep -q true 2>/dev/null; then
+              echo "  -> Skipping development-only plugin: $plugin_name"
               continue
             fi
             
             # Get supported OS from available .sh files (direct files)
-            supported_os=$(ls "$plugin_dir"/*.sh 2>/dev/null | sed 's|.*/||; s|.sh||' | grep -v 'generic' | tr '\n' ',' | sed 's/,$//')
+            supported_os=$(ls "$plugin_dir"/*.sh 2>/dev/null | sed 's|.*/||; s|.sh||' | grep -v 'generic' 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
             
             # If no direct .sh files, check for subdirectory structure
             if [ -z "$supported_os" ]; then
               # Check for OS-specific subdirectories
-              os_dirs=$(find "$plugin_dir" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
-                if [ -f "$dir/latest.sh" ] || [ -f "$dir"/*.sh ]; then
+              os_dirs=$(find "$plugin_dir" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read -r dir; do
+                if [ -f "$dir/latest.sh" ] || ls "$dir"/*.sh >/dev/null 2>&1; then
                   basename "$dir"
                 fi
-              done | grep -v generic | tr '\n' ',' | sed 's/,$//')
+              done | grep -v generic 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
               
               if [ -n "$os_dirs" ]; then
                 supported_os="$os_dirs"
@@ -61,14 +80,20 @@ jobs:
             # Add to list with proper format
             if [ -n "$supported_os" ]; then
               echo "$plugin_name:$category:$supported_os" >> plugins/list.txt
+              echo "  -> Added: $plugin_name:$category:$supported_os"
             else
               echo "$plugin_name:$category" >> plugins/list.txt
+              echo "  -> Added: $plugin_name:$category"
             fi
-          done
+            
+            plugin_count=$((plugin_count + 1))
+          done < <(find plugins -mindepth 2 -maxdepth 2 -type d -print0 | sort -z)
           
           # Add trailing newlines for consistency
           echo "" >> plugins/list.txt
           echo "" >> plugins/list.txt
+          
+          echo "Generated plugin list with $plugin_count plugins"
           
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
