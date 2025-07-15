@@ -3,4 +3,6 @@
 # Categories: webservers, databases, containerization, monitoring, security, storage, development, networking, backup
 
 
-nginx:webservers:debian,rhel,arch
+nginx:webservers:rhel,debian,arch
+
+
