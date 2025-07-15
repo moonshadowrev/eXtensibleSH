@@ -27,13 +27,22 @@ jobs:
           valid_count=0
           invalid_count=0
           
-          while IFS=':' read -r name category url description; do
+          while read -r line; do
             # Skip comments and empty lines
-            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+            if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
               continue
             fi
             
+            # Parse line using awk to handle URLs with colons properly
+            name=$(echo "$line" | cut -d: -f1)
+            category=$(echo "$line" | cut -d: -f2)
+            # Get URL and description by finding the last colon
+            temp=$(echo "$line" | cut -d: -f3-)
+            description=$(echo "$temp" | rev | cut -d: -f1 | rev)
+            url=$(echo "$temp" | rev | cut -d: -f2- | rev)
+            
             echo "Validating: $name"
+            echo "URL: $url"
             
             # Basic URL accessibility check (allow redirects)
             if curl -s -L -I "$url" | head -1 | grep -q "200\|301\|302"; then
@@ -125,11 +134,18 @@ jobs:
           
           # Add scripts
           script_count=0
-          while IFS=':' read -r name category url description; do
+          while read -r line; do
             # Skip comments and empty lines
-            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+            if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
               continue
             fi
+            
+            # Parse line properly
+            name=$(echo "$line" | cut -d: -f1)
+            category=$(echo "$line" | cut -d: -f2)
+            temp=$(echo "$line" | cut -d: -f3-)
+            description=$(echo "$temp" | rev | cut -d: -f1 | rev)
+            url=$(echo "$temp" | rev | cut -d: -f2- | rev)
             
             # Add script to registry
             jq --arg name "$name" --arg category "$category" --arg url "$url" --arg description "$description" \
@@ -151,11 +167,18 @@ jobs:
           # Remove old generated scripts (keep README.md and list.txt)
           find thirdparty -name "*.sh" -not -name "manual-*" -delete 2>/dev/null || true
           
-          while IFS=':' read -r name category url description; do
+          while read -r line; do
             # Skip comments and empty lines
-            if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+            if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
               continue
             fi
+            
+            # Parse line properly
+            name=$(echo "$line" | cut -d: -f1)
+            category=$(echo "$line" | cut -d: -f2)
+            temp=$(echo "$line" | cut -d: -f3-)
+            description=$(echo "$temp" | rev | cut -d: -f1 | rev)
+            url=$(echo "$temp" | rev | cut -d: -f2- | rev)
             
             echo "Creating script file: $name.sh"
             
