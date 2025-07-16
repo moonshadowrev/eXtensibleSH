@@ -181,6 +181,10 @@ get_plugin_metadata() {
     curl -s -f "$metadata_url" 2>/dev/null || echo "{}"
 }
 
+# Global arrays for plugin selection
+declare -a AVAILABLE_PLUGINS=()
+declare -a AVAILABLE_THIRDPARTY=()
+
 # Function to load and parse plugin list
 load_plugins() {
     print_color "$YELLOW" "${INFO} Loading plugin registry..."
@@ -197,8 +201,114 @@ load_plugins() {
         fi
     fi
     
+    # Build available plugins array for interactive selection
+    build_plugin_arrays
+    
     print_color "$GREEN" "${CHECKMARK} Plugin registry loaded successfully"
     return 0
+}
+
+# Function to build plugin arrays for interactive selection
+build_plugin_arrays() {
+    AVAILABLE_PLUGINS=()
+    
+    # Categories to scan
+    local categories=("webservers" "databases" "containerization" "monitoring" "security" "storage")
+    
+    # Scan new plugin structure
+    for category in "${categories[@]}"; do
+        if [ -d "plugins/${category}" ]; then
+            for plugin_dir in plugins/${category}/*/; do
+                if [ -d "$plugin_dir" ]; then
+                    local plugin_name=$(basename "$plugin_dir")
+                    local metadata=$(get_plugin_metadata "$plugin_name" "$category")
+                    local display_name=$(echo "$metadata" | jq -r '.display_name // .name // "Unknown"' 2>/dev/null || echo "$plugin_name")
+                    local description=$(echo "$metadata" | jq -r '.description // "No description available"' 2>/dev/null || echo "No description available")
+                    
+                    # Check compatibility
+                    local compatible="false"
+                    local status_icon=""
+                    if plugin_exists "$plugin_name" "$category" "$OS_GROUP"; then
+                        compatible="true"
+                        status_icon="${GREEN}${CHECKMARK}${NC}"
+                    elif plugin_exists "$plugin_name" "$category" "generic"; then
+                        compatible="generic"
+                        status_icon="${YELLOW}${WARNING}${NC}"
+                    else
+                        status_icon="${RED}${CROSS}${NC}"
+                    fi
+                    
+                    AVAILABLE_PLUGINS+=("${plugin_name}|${category}|${display_name}|${description}|${compatible}|${status_icon}")
+                fi
+            done
+        fi
+    done
+    
+    # Add legacy plugins if available
+    if [ -n "${PLUGIN_LIST:-}" ]; then
+        while IFS= read -r line; do
+            if [[ "$line" == *":"* ]]; then
+                local plugin=$(echo "$line" | cut -d':' -f1)
+                local supported=$(echo "$line" | cut -d':' -f2)
+                local compatible="false"
+                local status_icon=""
+                
+                if [[ "$supported" == *"$OS_GROUP"* ]]; then
+                    compatible="true"
+                    status_icon="${GREEN}${CHECKMARK}${NC}"
+                elif plugin_exists_legacy "$plugin" "generic"; then
+                    compatible="generic"
+                    status_icon="${YELLOW}${WARNING}${NC}"
+                else
+                    status_icon="${RED}${CROSS}${NC}"
+                fi
+                
+                AVAILABLE_PLUGINS+=("${plugin}|legacy|${plugin}|Legacy plugin (${supported})|${compatible}|${status_icon}")
+            fi
+        done <<< "$PLUGIN_LIST"
+    fi
+}
+
+# Function to build third-party arrays
+build_thirdparty_arrays() {
+    AVAILABLE_THIRDPARTY=()
+    
+    if [ -n "${THIRDPARTY_LIST:-}" ]; then
+                while read -r line; do
+            if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
+                continue
+            fi
+            
+            # Parse name:category:url:description more carefully
+            # Extract name (everything before first colon)
+            local name="${line%%:*}"
+            local rest="${line#*:}"
+            
+            # Extract category (everything before second colon)
+            local category="${rest%%:*}"
+            local url_part="${rest#*:}"
+            
+            # Extract URL (everything before last colon that contains description)
+            local url=""
+            local description=""
+            
+            if [[ "$url_part" =~ ^(https?://[^:]+):(.*)$ ]]; then
+                # URL doesn't have additional colons
+                url="${BASH_REMATCH[1]}"
+                description="${BASH_REMATCH[2]}"
+            elif [[ "$url_part" =~ ^(https?://.*):([^/:]*)$ ]]; then
+                # URL might have path with colons, description is the last part after final colon
+                url="${BASH_REMATCH[1]}"
+                description="${BASH_REMATCH[2]}"
+            else
+                # Fallback: assume no description
+                url="$url_part"
+                description=""
+            fi
+            
+            AVAILABLE_THIRDPARTY+=("${name}|${category}|${url}|${description}")
+        done <<< "$THIRDPARTY_LIST"
+    fi
 }
 
 # Function to load third-party scripts
@@ -213,7 +323,173 @@ load_thirdparty() {
         return 0
     fi
     
+    # Build third-party array for interactive selection
+    build_thirdparty_arrays
+    
     print_color "$GREEN" "${CHECKMARK} Third-party scripts loaded successfully"
+    return 0
+}
+
+# Function for interactive plugin selection
+interactive_plugin_selection() {
+    local allow_multiple="${1:-false}"
+    
+    if [ ${#AVAILABLE_PLUGINS[@]} -eq 0 ]; then
+        print_color "$RED" "${CROSS} No plugins available"
+        return 1
+    fi
+    
+    print_section "Select Plugin$([ "$allow_multiple" = "true" ] && echo "s" || echo "")"
+    
+    # Display available plugins with numbers
+    local index=1
+    for plugin_entry in "${AVAILABLE_PLUGINS[@]}"; do
+        IFS='|' read -r plugin_name category display_name description compatible status_icon <<< "$plugin_entry"
+        print_color "$WHITE" "${index}. ${status_icon} ${display_name}"
+        print_color "$GRAY" "   ${description}"
+        print_color "$GRAY" "   Category: ${category} | Compatibility: ${compatible}"
+        echo
+        ((index++))
+    done
+    
+    echo
+    if [ "$allow_multiple" = "true" ]; then
+        print_color "$YELLOW" "${INFO} Enter plugin numbers separated by spaces (e.g., 1 3 5) or 'all' for all compatible:"
+    else
+        print_color "$YELLOW" "${INFO} Enter plugin number (1-$((index-1))):"
+    fi
+    
+    read -p "Selection: " -r selection
+    
+    # Handle empty selection
+    if [ -z "$selection" ]; then
+        print_color "$YELLOW" "${INFO} No selection made"
+        return 0
+    fi
+    
+    # Handle selection
+    local selected_plugins=()
+    
+    if [ "$allow_multiple" = "true" ] && [ "$selection" = "all" ]; then
+        # Select all compatible plugins
+        for plugin_entry in "${AVAILABLE_PLUGINS[@]}"; do
+            IFS='|' read -r plugin_name category display_name description compatible status_icon <<< "$plugin_entry"
+            if [ "$compatible" = "true" ] || [ "$compatible" = "generic" ]; then
+                selected_plugins+=("$plugin_entry")
+            fi
+        done
+    else
+        # Parse individual selections
+        for num in $selection; do
+            if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le ${#AVAILABLE_PLUGINS[@]} ]; then
+                selected_plugins+=("${AVAILABLE_PLUGINS[$((num-1))]}")
+            else
+                print_color "$RED" "${CROSS} Invalid selection: $num"
+                return 1
+            fi
+        done
+    fi
+    
+    # Check if any plugins were selected
+    if [ ${#selected_plugins[@]} -eq 0 ]; then
+        print_color "$YELLOW" "${INFO} No valid plugins selected"
+        return 0
+    fi
+    
+    # Execute selected plugins
+    for plugin_entry in "${selected_plugins[@]}"; do
+        IFS='|' read -r plugin_name category display_name description compatible status_icon <<< "$plugin_entry"
+        echo
+        print_color "$CYAN" "$(printf '─%.0s' {1..80})"
+        print_color "$CYAN" "Installing: ${display_name}"
+        print_color "$CYAN" "$(printf '─%.0s' {1..80})"
+        
+        if [ "$compatible" = "false" ]; then
+            print_color "$RED" "${WARNING} Plugin not compatible with ${OS_GROUP}. Skipping..."
+            continue
+        fi
+        
+        run_plugin "$plugin_name" "$category"
+        
+        print_color "$GREEN" "${CHECKMARK} Completed: ${display_name}"
+    done
+    
+    return 0
+}
+
+# Function for interactive third-party selection
+interactive_thirdparty_selection() {
+    local allow_multiple="${1:-false}"
+    
+    if [ ${#AVAILABLE_THIRDPARTY[@]} -eq 0 ]; then
+        print_color "$RED" "${CROSS} No third-party scripts available"
+        return 1
+    fi
+    
+    print_section "Select Third-Party Script$([ "$allow_multiple" = "true" ] && echo "s" || echo "")"
+    
+    print_color "$RED" "${WARNING} Third-party scripts are not officially maintained!"
+    print_color "$RED" "    Always review scripts before execution!"
+    echo
+    
+    # Display available scripts with numbers
+    local index=1
+    for script_entry in "${AVAILABLE_THIRDPARTY[@]}"; do
+        IFS='|' read -r name category url description <<< "$script_entry"
+        print_color "$WHITE" "${index}. ${STAR} ${name}"
+        print_color "$GRAY" "   ${description}"
+        print_color "$GRAY" "   Category: ${category} | URL: ${url}"
+        echo
+        ((index++))
+    done
+    
+    echo
+    if [ "$allow_multiple" = "true" ]; then
+        print_color "$YELLOW" "${INFO} Enter script numbers separated by spaces (e.g., 1 3 5):"
+    else
+        print_color "$YELLOW" "${INFO} Enter script number (1-$((index-1))):"
+    fi
+    
+    read -p "Selection: " -r selection
+    
+    # Handle empty selection
+    if [ -z "$selection" ]; then
+        print_color "$YELLOW" "${INFO} No selection made"
+        return 0
+    fi
+    
+    # Handle selection
+    local selected_scripts=()
+    
+    # Parse individual selections
+    for num in $selection; do
+        if [[ "$num" =~ ^[0-9]+$ ]] && [ "$num" -ge 1 ] && [ "$num" -le ${#AVAILABLE_THIRDPARTY[@]} ]; then
+            selected_scripts+=("${AVAILABLE_THIRDPARTY[$((num-1))]}")
+        else
+            print_color "$RED" "${CROSS} Invalid selection: $num"
+            return 1
+        fi
+    done
+    
+    # Check if any scripts were selected
+    if [ ${#selected_scripts[@]} -eq 0 ]; then
+        print_color "$YELLOW" "${INFO} No valid scripts selected"
+        return 0
+    fi
+    
+    # Execute selected scripts
+    for script_entry in "${selected_scripts[@]}"; do
+        IFS='|' read -r name category url description <<< "$script_entry"
+        echo
+        print_color "$CYAN" "$(printf '─%.0s' {1..80})"
+        print_color "$CYAN" "Installing: ${name}"
+        print_color "$CYAN" "$(printf '─%.0s' {1..80})"
+        
+        run_thirdparty "$name"
+        
+        print_color "$GREEN" "${CHECKMARK} Completed: ${name}"
+    done
+    
     return 0
 }
 
@@ -229,7 +505,7 @@ display_plugins() {
         local category="${categories[$i]}"
         local icon="${category_icons[$i]}"
         
-        print_color "$MAGENTA" "${icon} ${category^^}:"
+        print_color "$MAGENTA" "${icon} $(echo "$category" | tr '[:lower:]' '[:upper:]'):"
         
         # List plugins in this category
         local found_plugins=false
@@ -270,7 +546,7 @@ display_plugins() {
     
     # Legacy plugins (backward compatibility)
     print_color "$MAGENTA" "📦 LEGACY PLUGINS:"
-    if [ -n "$PLUGIN_LIST" ]; then
+    if [ -n "${PLUGIN_LIST:-}" ]; then
         while IFS= read -r line; do
             if [[ "$line" == *":"* ]]; then
                 local plugin=$(echo "$line" | cut -d':' -f1)
@@ -312,11 +588,38 @@ display_thirdparty() {
             local icon="${category_icons[$i]}"
             local found_scripts=false
             
-            print_color "$MAGENTA" "${icon} ${category^^}:"
+            print_color "$MAGENTA" "${icon} $(echo "$category" | tr '[:lower:]' '[:upper:]'):"
             
-            while IFS=':' read -r name cat_name url description; do
-                if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+                        while read -r line; do
+                if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
                     continue
+                fi
+                
+                # Parse name:category:url:description more carefully
+                # Extract name (everything before first colon)
+                local name="${line%%:*}"
+                local rest="${line#*:}"
+                
+                # Extract category (everything before second colon)
+                local cat_name="${rest%%:*}"
+                local url_part="${rest#*:}"
+                
+                # Extract URL (everything before last colon that contains description)
+                local url=""
+                local description=""
+                
+                if [[ "$url_part" =~ ^(https?://[^:]+):(.*)$ ]]; then
+                    # URL doesn't have additional colons
+                    url="${BASH_REMATCH[1]}"
+                    description="${BASH_REMATCH[2]}"
+                elif [[ "$url_part" =~ ^(https?://.*):([^/:]*)$ ]]; then
+                    # URL might have path with colons, description is the last part after final colon
+                    url="${BASH_REMATCH[1]}"
+                    description="${BASH_REMATCH[2]}"
+                else
+                    # Fallback: assume no description
+                    url="$url_part"
+                    description=""
                 fi
                 
                 if [[ "$cat_name" == "$category" ]]; then
@@ -358,17 +661,73 @@ run_plugin() {
     # Try new plugin structure first
     if [ -n "$category" ] && plugin_exists "$plugin" "$category" "$OS_GROUP" "$version"; then
         print_color "$GREEN" "${CHECKMARK} Loading OS-specific plugin for ${OS_GROUP}"
-        curl -s "${BASE_URL}/plugins/${category}/${plugin}/${OS_GROUP}/${version}.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+        local plugin_url="${BASE_URL}/plugins/${category}/${plugin}/${OS_GROUP}/${version}.sh"
+        print_color "$GRAY" "Downloading from: ${plugin_url}"
+        if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+            print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+        else
+            local exit_code=$?
+            print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+            print_color "$YELLOW" "${WARNING} This could be due to:"
+            print_color "$WHITE" "  1. Network connectivity issues"
+            print_color "$WHITE" "  2. Plugin server unavailable"
+            print_color "$WHITE" "  3. Plugin execution errors"
+            print_color "$WHITE" "  4. Permission issues"
+            print_color "$WHITE" "  5. Missing dependencies"
+            return 1
+        fi
     elif [ -n "$category" ] && plugin_exists "$plugin" "$category" "generic" "$version"; then
         print_color "$YELLOW" "${WARNING} No OS-specific plugin found. Loading generic version."
-        curl -s "${BASE_URL}/plugins/${category}/${plugin}/generic/${version}.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+        local plugin_url="${BASE_URL}/plugins/${category}/${plugin}/generic/${version}.sh"
+        print_color "$GRAY" "Downloading from: ${plugin_url}"
+        if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+            print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+        else
+            local exit_code=$?
+            print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+            print_color "$YELLOW" "${WARNING} This could be due to:"
+            print_color "$WHITE" "  1. Network connectivity issues"
+            print_color "$WHITE" "  2. Plugin server unavailable"
+            print_color "$WHITE" "  3. Plugin execution errors"
+            print_color "$WHITE" "  4. Permission issues"
+            print_color "$WHITE" "  5. Missing dependencies"
+            return 1
+        fi
     # Fallback to legacy structure
     elif plugin_exists_legacy "$plugin" "$OS_GROUP"; then
         print_color "$GREEN" "${CHECKMARK} Loading legacy plugin for ${OS_GROUP}"
-        curl -s "${BASE_URL}/plugins/${plugin}/${OS_GROUP}.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+        local plugin_url="${BASE_URL}/plugins/${plugin}/${OS_GROUP}.sh"
+        print_color "$GRAY" "Downloading from: ${plugin_url}"
+        if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+            print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+        else
+            local exit_code=$?
+            print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+            print_color "$YELLOW" "${WARNING} This could be due to:"
+            print_color "$WHITE" "  1. Network connectivity issues"
+            print_color "$WHITE" "  2. Plugin server unavailable"
+            print_color "$WHITE" "  3. Plugin execution errors"
+            print_color "$WHITE" "  4. Permission issues"
+            print_color "$WHITE" "  5. Missing dependencies"
+            return 1
+        fi
     elif plugin_exists_legacy "$plugin" "generic"; then
         print_color "$YELLOW" "${WARNING} Loading legacy generic plugin"
-        curl -s "${BASE_URL}/plugins/${plugin}/generic.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+        local plugin_url="${BASE_URL}/plugins/${plugin}/generic.sh"
+        print_color "$GRAY" "Downloading from: ${plugin_url}"
+        if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+            print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+        else
+            local exit_code=$?
+            print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+            print_color "$YELLOW" "${WARNING} This could be due to:"
+            print_color "$WHITE" "  1. Network connectivity issues"
+            print_color "$WHITE" "  2. Plugin server unavailable"
+            print_color "$WHITE" "  3. Plugin execution errors"
+            print_color "$WHITE" "  4. Permission issues"
+            print_color "$WHITE" "  5. Missing dependencies"
+            return 1
+        fi
     else
         print_color "$RED" "${CROSS} No plugin found for ${plugin}"
         print_color "$YELLOW" "${WARNING} Available options:"
@@ -382,10 +741,26 @@ run_plugin() {
             read -p "Enter OS group to force (debian/rhel/arch/generic): " forced_os
             if [ -n "$category" ] && plugin_exists "$plugin" "$category" "$forced_os" "$version"; then
                 print_color "$YELLOW" "${WARNING} Force loading from ${forced_os}"
-                curl -s "${BASE_URL}/plugins/${category}/${plugin}/${forced_os}/${version}.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+                local plugin_url="${BASE_URL}/plugins/${category}/${plugin}/${forced_os}/${version}.sh"
+                print_color "$GRAY" "Downloading from: ${plugin_url}"
+                if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+                    print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+                else
+                    local exit_code=$?
+                    print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+                    return 1
+                fi
             elif plugin_exists_legacy "$plugin" "$forced_os"; then
                 print_color "$YELLOW" "${WARNING} Force loading legacy plugin from ${forced_os}"
-                curl -s "${BASE_URL}/plugins/${plugin}/${forced_os}.sh" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+                local plugin_url="${BASE_URL}/plugins/${plugin}/${forced_os}.sh"
+                print_color "$GRAY" "Downloading from: ${plugin_url}"
+                if curl -fsSL "$plugin_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"; then
+                    print_color "$GREEN" "${CHECKMARK} Plugin executed successfully"
+                else
+                    local exit_code=$?
+                    print_color "$RED" "${CROSS} Plugin execution failed (exit code: $exit_code)"
+                    return 1
+                fi
             else
                 print_color "$RED" "${CROSS} Plugin not found for ${forced_os} either"
                 return 1
@@ -400,15 +775,46 @@ run_plugin() {
 run_thirdparty() {
     local script_name="$1"
     local script_url=""
+    local script_description=""
     
-    # Find the script URL
-    while IFS=':' read -r name category url description; do
-        if [[ "$name" =~ ^#.*$ ]] || [[ -z "$name" ]]; then
+        # Find the script URL with proper parsing
+    while read -r line; do
+        if [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]]; then
             continue
+        fi
+        
+        # Parse name:category:url:description more carefully
+        # Extract name (everything before first colon)
+        local name="${line%%:*}"
+        local rest="${line#*:}"
+        
+        # Extract category (everything before second colon)
+        local category="${rest%%:*}"
+        local url_part="${rest#*:}"
+        
+        # Extract URL (everything before last colon that contains description)
+        # For lines like: name:category:https://example.com:description
+        # We need to find where URL ends and description starts
+        local url=""
+        local description=""
+        
+        if [[ "$url_part" =~ ^(https?://[^:]+):(.*)$ ]]; then
+            # URL doesn't have additional colons
+            url="${BASH_REMATCH[1]}"
+            description="${BASH_REMATCH[2]}"
+        elif [[ "$url_part" =~ ^(https?://.*):([^/:]*)$ ]]; then
+            # URL might have path with colons, description is the last part after final colon
+            url="${BASH_REMATCH[1]}"
+            description="${BASH_REMATCH[2]}"
+        else
+            # Fallback: assume no description
+            url="$url_part"
+            description=""
         fi
         
         if [[ "$name" == "$script_name" ]]; then
             script_url="$url"
+            script_description="$description"
             break
         fi
     done <<< "$THIRDPARTY_LIST"
@@ -418,25 +824,29 @@ run_thirdparty() {
         return 1
     fi
     
-    print_color "$RED" "${WARNING} You are about to run a third-party script!"
-    print_color "$WHITE" "Script: ${script_name}"
-    print_color "$WHITE" "URL: ${script_url}"
-    print_color "$RED" "This script is not maintained by eXtensibleSH team."
-    
-    read -p "Review the script first? (Y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        print_color "$YELLOW" "${INFO} Opening script for review..."
-        curl -s "$script_url" | less
+    # Validate URL format
+    if [[ ! "$script_url" =~ ^https?:// ]]; then
+        print_color "$RED" "${CROSS} Invalid URL format: ${script_url}"
+        print_color "$YELLOW" "${WARNING} URL parsing may have failed. Please check the third-party list format."
+        return 1
     fi
     
-    read -p "Continue with execution? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_color "$YELLOW" "${ROCKET} Executing third-party script..."
-        curl -s "$script_url" | bash -s -- --log="$LOG_FILE" --use-sudo="$USE_SUDO"
+    print_color "$YELLOW" "${ROCKET} Executing third-party script: ${script_name}"
+    print_color "$WHITE" "Description: ${script_description:-No description}"
+    print_color "$RED" "${WARNING} This script is not maintained by eXtensibleSH team."
+    print_color "$GRAY" "Downloading from: ${script_url}"
+    
+    # Execute the script with proper error handling
+    if curl -fsSL "$script_url" | bash; then
+        print_color "$GREEN" "${CHECKMARK} Script executed successfully"
     else
-        print_color "$YELLOW" "${INFO} Execution cancelled"
+        local exit_code=$?
+        print_color "$RED" "${CROSS} Script execution failed (exit code: $exit_code)"
+        print_color "$YELLOW" "${WARNING} This could be due to:"
+        print_color "$WHITE" "  1. Network connectivity issues"
+        print_color "$WHITE" "  2. Script server unavailable"
+        print_color "$WHITE" "  3. Script execution errors"
+        print_color "$WHITE" "  4. Permission issues"
         return 1
     fi
 }
@@ -454,14 +864,16 @@ show_menu() {
         print_section "Main Menu"
         print_color "$WHITE" "1. ${GEAR} Show Available Plugins"
         print_color "$WHITE" "2. ${STAR} Show Third-Party Scripts"
-        print_color "$WHITE" "3. ${ROCKET} Run Plugin"
-        print_color "$WHITE" "4. ${ROCKET} Run Third-Party Script"
-        print_color "$WHITE" "5. ${INFO} System Information"
-        print_color "$WHITE" "6. ${CROSS} Exit"
+        print_color "$WHITE" "3. ${ROCKET} Install Single Plugin"
+        print_color "$WHITE" "4. ${ROCKET} Install Multiple Plugins"
+        print_color "$WHITE" "5. ${STAR} Install Single Third-Party Script"
+        print_color "$WHITE" "6. ${STAR} Install Multiple Third-Party Scripts"
+        print_color "$WHITE" "7. ${INFO} System Information"
+        print_color "$WHITE" "8. ${CROSS} Exit"
         
         print_footer
         
-        read -p "Select an option (1-6): " -n 1 -r
+        read -p "Select an option (1-8): " -n 1 -r
         echo
         
         case $REPLY in
@@ -479,24 +891,29 @@ show_menu() {
                 ;;
             3)
                 clear
-                print_header "Run Plugin"
-                read -p "Enter plugin name: " plugin_name
-                read -p "Enter category (or leave empty for auto-detect): " category
-                if [ -n "$plugin_name" ]; then
-                    run_plugin "$plugin_name" "$category"
-                    read -p "Press Enter to continue..." -r
-                fi
+                print_header "Install Single Plugin"
+                interactive_plugin_selection false
+                read -p "Press Enter to continue..." -r
                 ;;
             4)
                 clear
-                print_header "Run Third-Party Script"
-                read -p "Enter script name: " script_name
-                if [ -n "$script_name" ]; then
-                    run_thirdparty "$script_name"
-                    read -p "Press Enter to continue..." -r
-                fi
+                print_header "Install Multiple Plugins"
+                interactive_plugin_selection true
+                read -p "Press Enter to continue..." -r
                 ;;
             5)
+                clear
+                print_header "Install Single Third-Party Script"
+                interactive_thirdparty_selection false
+                read -p "Press Enter to continue..." -r
+                ;;
+            6)
+                clear
+                print_header "Install Multiple Third-Party Scripts"
+                interactive_thirdparty_selection true
+                read -p "Press Enter to continue..." -r
+                ;;
+            7)
                 clear
                 print_header "System Information"
                 print_color "$WHITE" "OS: ${OS} (${OS_GROUP})"
@@ -506,9 +923,11 @@ show_menu() {
                 print_color "$WHITE" "Log File: ${LOG_FILE}"
                 print_color "$WHITE" "Script Version: ${SCRIPT_VERSION}"
                 print_color "$WHITE" "Repository: https://github.com/${GITHUB_USER}/${GITHUB_REPO}"
+                print_color "$WHITE" "Available Plugins: ${#AVAILABLE_PLUGINS[@]}"
+                print_color "$WHITE" "Available Third-Party Scripts: ${#AVAILABLE_THIRDPARTY[@]}"
                 read -p "Press Enter to continue..." -r
                 ;;
-            6)
+            8)
                 print_color "$GREEN" "${CHECKMARK} Thank you for using eXtensibleSH!"
                 exit 0
                 ;;

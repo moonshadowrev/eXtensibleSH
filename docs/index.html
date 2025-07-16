@@ -117,8 +117,11 @@
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 20px 40px var(--shadow-color);
-            max-width: 100%;
+            max-width: 1000px;
+            width: 100%;
             height: auto;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .hero-image img {
@@ -758,7 +761,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
                     <h3 class="feature-title">One-Command Execution</h3>
-                    <p class="feature-description">Run directly from GitHub with a single curl command. No downloads, no installations, no hassle. Just pure automation.</p>
+                    <p class="feature-description">Enhanced interactive experience with numbered menus, batch installation, and robust download + execute method. Choose single plugins, multiple plugins, or install all compatible services at once.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🐧</div>
@@ -788,22 +791,28 @@
         <div class="container">
             <h2 class="section-title">Quick Start</h2>
             <div class="quickstart">
-                <h3>🚀 Run the interactive menu:</h3>
+                <h3>🚀 Interactive menu with numbered selection (Recommended):</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh')">Copy</button>
+                    <code>curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh</code>
+                </div>
+
+                <h3>📊 Alternative with wget:</h3>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('wget -O ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh')">Copy</button>
+                    <code>wget -O ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh</code>
+                </div>
+
+                <h3>⚡ Legacy one-line (Less reliable):</h3>
                 <div class="code-block">
                     <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash')">Copy</button>
                     <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash</code>
                 </div>
 
-                <h3>🎯 Run with a specific plugin:</h3>
+                <h3>🎯 Direct plugin installation:</h3>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx')">Copy</button>
-                    <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx</code>
-                </div>
-
-                <h3>📋 View available plugins:</h3>
-                <div class="code-block">
-                    <button class="copy-btn" onclick="copyToClipboard('curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/list.txt')">Copy</button>
-                    <code>curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugins/list.txt</code>
+                    <button class="copy-btn" onclick="copyToClipboard('curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh nginx webservers')">Copy</button>
+                    <code>curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh nginx webservers</code>
                 </div>
             </div>
         </div>
@@ -1212,12 +1221,12 @@
 
         // Copy command functions
         function copyInstallCommand(pluginName, category) {
-            const command = `curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s ${pluginName} ${category}`;
+            const command = `curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh ${pluginName} ${category}`;
             copyToClipboard(command);
         }
 
         function copyThirdPartyCommand(scriptName) {
-            const command = `curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s ${scriptName}`;
+            const command = `curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh ${scriptName}`;
             copyToClipboard(command);
         }
 

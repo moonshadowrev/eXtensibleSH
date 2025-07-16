@@ -36,17 +36,17 @@
 <tr>
 <td width="50%">
 
-**🎯 Zero Installation**
-> Run directly from GitHub with a single curl command
+**🎯 Enhanced Installation**
+> Download + execute method for reliability, or one-line for convenience
 
 **🤖 Smart OS Detection**
-> Automatically adapts to your Linux distribution
+> Automatically adapts to your Linux distribution with compatibility checking
 
-**🔌 Plugin Ecosystem**
-> Categorized plugins for web servers, databases, containers, and more
+**🔌 Interactive Plugin System**
+> Numbered selection menus, single/multiple installation, compatibility indicators
 
-**🌐 Third-Party Support**
-> Community-contributed scripts for extended functionality
+**🌐 Batch Installation**
+> Install multiple plugins at once with "all compatible" option
 
 </td>
 <td width="50%">
@@ -73,23 +73,35 @@
 
 ## 🚀 Quick Start
 
-### 🎯 One-Command Setup
+### 🎯 Recommended Installation (Download + Execute)
 
-Launch the interactive menu to explore available plugins:
+Launch the interactive menu with enhanced numbered selection system:
+
+```bash
+# Using curl (recommended)
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh
+
+# Using wget (alternative)  
+wget -O ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh
+```
+
+### 🎯 Legacy One-Line Installation (Less Reliable)
 
 ```bash
 curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash
 ```
 
 <details>
-<summary>📋 <b>What happens when you run this command?</b></summary>
+<summary>📋 <b>What happens when you run eXtensibleSH?</b></summary>
 <br>
 
-1. **🔍 OS Detection**: Automatically detects your Linux distribution
+1. **🔍 OS Detection**: Automatically detects your Linux distribution and compatibility
 2. **📝 Logging Setup**: Creates comprehensive logs in `./logs/`
-3. **🎨 Interactive Menu**: Displays a beautiful terminal interface
-4. **🔌 Plugin Discovery**: Shows available plugins and third-party scripts
-5. **⚙️ Configuration**: Guides you through server-specific optimizations
+3. **🎨 Interactive Menu**: Beautiful terminal interface with numbered selections
+4. **🔌 Plugin Discovery**: Shows categorized plugins with compatibility indicators
+5. **📊 Smart Selection**: Choose single plugins, multiple plugins, or "all compatible"
+6. **⚙️ Batch Installation**: Install multiple services with one command
+7. **🛡️ Safety Checks**: OS compatibility verification before installation
 
 </details>
 
@@ -97,12 +109,14 @@ curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh 
 
 ### 🎯 Direct Plugin Installation
 
-Install specific services directly:
+Install specific services directly (bypass interactive menu):
 
 ```bash
-# Install NGINX web server
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx webservers
+# Download first, then run with plugin
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh nginx webservers
 
+# Legacy direct pipe method
+curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx webservers
 ```
 
 <br>
@@ -116,6 +130,62 @@ curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/plugin
 # View third-party scripts
 curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/thirdparty/list.txt
 ```
+
+<br>
+
+---
+
+## 🎨 New Interactive Features
+
+> **v1.0.0 introduces a complete UI overhaul with enhanced user experience**
+
+<table>
+<tr>
+<td width="50%">
+
+### 🔢 **Numbered Selection Menus**
+- **Easy Navigation**: No more typing plugin names manually
+- **Visual Indicators**: ✅ Compatible, ⚠️ Generic, ❌ Incompatible
+- **Clear Descriptions**: See what each plugin does before installing
+
+### 📊 **Smart Batch Installation**
+- **Multiple Selection**: Choose several plugins (e.g., "1 3 5")
+- **"All Compatible"**: Install all OS-compatible plugins at once
+- **Progress Tracking**: Clear feedback during installations
+
+</td>
+<td width="50%">
+
+### 🎯 **Enhanced Plugin Discovery**
+- **Category Organization**: Web servers, databases, containers, etc.
+- **Compatibility Checking**: See what works on your OS
+- **Metadata Support**: Rich descriptions and installation details
+
+### 🛡️ **Improved Safety**
+- **Download + Execute**: Inspect scripts before running
+- **OS Verification**: Skip incompatible plugins automatically
+- **Comprehensive Logging**: Detailed logs for troubleshooting
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+### 🎮 **Interactive Menu Options**
+
+```
+1. 📊 Show Available Plugins          # Browse catalog with compatibility
+2. ⭐ Show Third-Party Scripts         # Browse external scripts  
+3. 🚀 Install Single Plugin           # Pick one plugin interactively
+4. 🚀 Install Multiple Plugins        # Batch install multiple plugins
+5. ⭐ Install Single Third-Party       # Pick one script interactively
+6. ⭐ Install Multiple Third-Party     # Batch install scripts
+7. ℹ️  System Information             # Enhanced system details
+8. ❌ Exit
+```
+
+</div>
 
 <br>
 
@@ -542,73 +612,6 @@ Enter OS list: debian rhel arch
 
 ---
 
-## 🛠️ Installation Examples
-
-<div align="center">
-
-### 🎯 **Common Use Cases**
-
-</div>
-
-<br>
-
-<details>
-<summary>🌐 <b>Web Server Setup</b></summary>
-<br>
-
-```bash
-# Interactive setup with server profile selection
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx webservers
-```
-
-**Features included:**
-- ✅ Server profile selection (low-end, mid-level, high-end)
-- ✅ SSL certificate setup
-- ✅ Performance tuning options
-- ✅ Firewall configuration
-- ✅ Security hardening
-
-</details>
-
-<details>
-<summary>🐳 <b>Container Platform</b></summary>
-<br>
-
-```bash
-# Install Docker with automatic configuration
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s docker containerization
-```
-
-**Features included:**
-- ✅ Docker Engine installation
-- ✅ User group configuration
-- ✅ Service enablement
-- ✅ Basic security setup
-- ✅ Container management tools
-
-</details>
-
-<details>
-<summary>📊 <b>Monitoring Stack</b></summary>
-<br>
-
-```bash
-# Interactive menu for monitoring tools
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash
-```
-
-**Available options:**
-- ✅ Prometheus (metrics collection)
-- ✅ Grafana (visualization)
-- ✅ ELK Stack (logging)
-- ✅ Uptime monitoring
-- ✅ Performance dashboards
-
-</details>
-
-<br>
-
----
 
 ## 🔒 Security & Safety
 

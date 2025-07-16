@@ -6,45 +6,73 @@ eXtensibleSH v1.0.0+ features a beautiful, interactive menu system that makes se
 
 ## Quick Start
 
-### Interactive Menu (Recommended)
+### Interactive Menu with Numbered Selection (Recommended)
 
-Run the script without any arguments to launch the interactive menu:
+Download and run the script to launch the enhanced interactive menu:
+
+```bash
+# Using curl (recommended)
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh
+
+# Using wget (alternative)
+wget -O ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh
+```
+
+This will:
+- Detect your operating system and compatibility
+- Set up comprehensive logging
+- Display a beautiful interactive menu with numbered options
+- Show categorized plugins with compatibility indicators (✅ ⚠️ ❌)
+- Allow single or multiple plugin selection
+- Support "all compatible" batch installation
+- Guide you through the installation process with progress feedback
+
+### Legacy One-Line Method (Less Reliable)
 
 ```bash
 curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash
 ```
 
-This will:
-- Detect your operating system
-- Set up logging
-- Display a colorful, interactive menu
-- Show compatible plugins and scripts
-- Guide you through the installation process
-
 ### Direct Plugin Execution
 
-Run a specific plugin directly:
+Run a specific plugin directly (bypass interactive menu):
 
 ```bash
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx
-```
+# Download + execute method (recommended)
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh nginx webservers
 
-Or with category specification:
-
-```bash
+# Legacy pipe method
 curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx webservers
 ```
 
-## Interactive Menu Features
+## Enhanced Interactive Menu Features
 
 ### Main Menu Options
 
-1. **🔧 Show Available Plugins**: Browse plugins organized by category
-2. **⭐ Show Third-Party Scripts**: View community-contributed scripts
-3. **🚀 Run Plugin**: Execute a specific plugin
-4. **🚀 Run Third-Party Script**: Execute a third-party script
-5. **ℹ️ System Information**: View system details and configuration
-6. **✗ Exit**: Exit the application
+1. **📊 Show Available Plugins**: Browse plugins by category with compatibility indicators
+2. **⭐ Show Third-Party Scripts**: View community-contributed scripts with descriptions
+3. **🚀 Install Single Plugin**: Select one plugin from numbered list
+4. **🚀 Install Multiple Plugins**: Select multiple plugins (e.g., "1 3 5" or "all")
+5. **⭐ Install Single Third-Party Script**: Select one script from numbered list
+6. **⭐ Install Multiple Third-Party Scripts**: Select multiple scripts for batch installation
+7. **ℹ️ System Information**: View system details, plugin counts, and configuration
+8. **❌ Exit**: Exit the application
+
+### New Interactive Features
+
+#### 🔢 Numbered Selection System
+- **No more typing**: Simply select by number (1, 2, 3...)
+- **Multiple selection**: Enter multiple numbers (e.g., "1 3 5")
+- **"All compatible"**: Type "all" to install all compatible plugins
+- **Clear feedback**: Visual progress during installation
+
+#### 🎯 Smart Plugin Discovery
+- **Compatibility indicators**: 
+  - ✅ **Compatible**: Works perfectly on your OS
+  - ⚠️ **Generic**: Universal version available
+  - ❌ **Incompatible**: Not available for your OS
+- **Rich descriptions**: See what each plugin does before installing
+- **Category organization**: Easy browsing by service type
 
 ### Plugin Categories
 
@@ -96,15 +124,18 @@ tail -f ./logs/exsh-log-*.log
 
 ### Command Line Arguments
 
-The script accepts several command line arguments:
+The script accepts several command line arguments for direct plugin execution:
 
 ```bash
-# Run specific plugin
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s PLUGIN_NAME [CATEGORY]
+# Recommended method: Download + execute
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh PLUGIN_NAME [CATEGORY]
 
 # Examples:
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s nginx
-curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s docker containerization
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh nginx webservers
+curl -o ex.sh https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh && chmod +x ex.sh && ./ex.sh docker containerization
+
+# Legacy method (less reliable):
+curl -s https://raw.githubusercontent.com/moonshadowrev/eXtensibleSH/main/ex.sh | bash -s PLUGIN_NAME [CATEGORY]
 ```
 
 ## Operating System Support
